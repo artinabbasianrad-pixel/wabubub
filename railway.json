@@ -5,6 +5,11 @@
     "buildCommand": "pip install -r R2Leafy/requirements.txt"
   },
   "deploy": {
+    "variables": {
+      "SECRET_KEY": {
+        "generateValue": true
+      }
+    },
     "startCommand": "python R2Leafy/main.py",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 60,
