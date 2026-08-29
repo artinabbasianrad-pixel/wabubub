@@ -1,0 +1,38 @@
+{
+  "name": "V2Leafy G2Leafy",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "overrideCommand": true,
+  "remoteUser": "root",
+  "forwardPorts": [443, 8080],
+  "portsAttributes": {
+    "443": {
+      "label": "VLESS (xray)",
+      "visibility": "public",
+      "onAutoForward": "silent"
+    },
+    "8080": {
+      "label": "G2Leafy Panel & Sub",
+      "visibility": "public",
+      "onAutoForward": "silent"
+    }
+  },
+  "containerEnv": {
+    "LANG": "C.UTF-8",
+    "LC_ALL": "C.UTF-8",
+    "TERM": "xterm-256color",
+    "PYTHONUNBUFFERED": "1"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+  "postCreateCommand": "gh auth status || true",
+  "postAttachCommand": "python3 G2Leafy/main.py"
+}
