@@ -441,7 +441,7 @@
                         <div class="panel-header"><div class="panel-title"><i class="fa-solid fa-shield-halved text-accent"></i> Cloudflare Relay</div></div>
                         <div class="panel-body" style="display:flex; flex-direction:column; gap:12px;">
                             <p style="color:var(--text-muted);font-size:.8rem;line-height:1.5;">Create a Worker relay. Your token is used once and never stored.</p>
-                            <a class="btn" href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" style="width:100%;">Open Cloudflare Token Page</a>
+                            <a class="btn" href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%5D&accountId=*&zoneId=all&name=V2Leafy%20Relay" target="_blank" style="width:100%;">Open Cloudflare Token Page</a>
                             <input id="relay-origin" class="form-control" type="url" placeholder="https://your-app.up.railway.app" autocomplete="off">
                             <input id="relay-token" class="form-control mono" type="password" placeholder="Cloudflare API token" autocomplete="new-password">
                             <button class="btn btn-primary" onclick="generateRelay()" style="width:100%;">Generate Relay</button>
@@ -1218,16 +1218,27 @@
 
             let link = '';
             if(entry.type === 'proxy') {
-                let ip = entry.ipAddress ? entry.ipAddress.trim() : (window.WEB_DOMAIN || window.PORT_DOMAIN || window.location.host);
-                let domain = window.WEB_DOMAIN || window.PORT_DOMAIN || window.location.host;
-                let name = encodeURIComponent(window.resolvePlaceholders(entry.name, client));
-                let trans = entry.transport || 'xhttp';
-
-                if(trans === 'ws') {
-                    link = `vless://${client.id}@${ip}:443?encryption=none&security=tls&sni=${domain}&fp=chrome&alpn=http/1.1&type=ws&host=${domain}&path=%2Fws#${name}`;
+                // The Python gateway only speaks VLESS-over-WebSocket on /ws/<uuid>,
+                // so every copied config must be type=ws with the client uuid in the
+                // path (xhttp is not implemented server-side and never worked).
+                let host = String(window.WEB_DOMAIN || window.PORT_DOMAIN || window.location.host).trim().replace(/^https?:\/\//, '');
+                if(host.charAt(0) === '[') {
+                    const e = host.indexOf(']');
+                    if(e !== -1) host = host.slice(0, e + 1);
                 } else {
-                    link = `vless://${client.id}@${ip}:443?encryption=none&security=tls&sni=${domain}&fp=chrome&alpn=http/1.1&type=xhttp&host=${domain}&path=%2Fxhttp&mode=packet-up#${name}`;
+                    host = host.split(':')[0];
                 }
+                host = host.replace(/\.$/, '') || 'localhost';
+                let ip = entry.ipAddress ? String(entry.ipAddress).trim() : host;
+                if(ip.charAt(0) === '[') {
+                    const e = ip.indexOf(']');
+                    if(e !== -1) ip = ip.slice(0, e + 1);
+                } else {
+                    ip = ip.split(':')[0];
+                }
+                ip = ip.replace(/\.$/, '') || host;
+                let name = encodeURIComponent(window.resolvePlaceholders(entry.name, client));
+                link = `vless://${client.id}@${ip}:443?encryption=none&security=tls&type=ws&host=${host}&path=%2Fws%2F${client.id}&sni=${host}&fp=chrome&alpn=http/1.1#${name}`;
             } else {
                 let text = encodeURIComponent(window.resolvePlaceholders(entry.name, client));
                 link = `trojan://${genUUID()}@127.0.0.1:80?security=none#${text}`;
