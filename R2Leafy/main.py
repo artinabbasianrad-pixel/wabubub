@@ -1373,6 +1373,7 @@ The API token is used only for the request and is never persisted or returned.
 import ipaddress
 import json
 import re
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -1408,21 +1409,74 @@ def validate_origin(value):
     return "https://"+host+(f":{parsed.port}" if parsed.port else "")+(parsed.path.rstrip("/") if parsed.path not in ("","/") else "")
 
 def _json_request(url, token, method="GET", payload=None):
-    body=json.dumps(payload).encode() if payload is not None else None; req=urllib.request.Request(url,data=body,method=method,headers={"Authorization":f"Bearer {token}","Content-Type":"application/json","Accept":"application/json"})
-    with urllib.request.urlopen(req,timeout=15) as response: return json.loads(response.read().decode())
+    body = json.dumps(payload).encode() if payload is not None else None
+    req = urllib.request.Request(url, data=body, method=method, headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json", "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            raw = response.read().decode()
+            return json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode(errors="ignore").strip()[:300]
+        raise ValueError(f"Cloudflare API {exc.code}: {detail or exc.reason}")
+    except urllib.error.URLError as exc:
+        raise ValueError(f"Cloudflare API unreachable: {exc.reason}")
+
+
+def _upload_worker(url, token, script):
+    """Deploy an ES-module Worker via multipart upload (the documented method).
+
+    A plain `application/javascript` PUT rejects module-format Workers (the ones
+    using `export default`) with HTTP 400, so the metadata part naming the main
+    module is required.
+    """
+    boundary = "----v2leafy" + secrets.token_hex(8)
+    meta = json.dumps({"main_module": "worker.js", "compatibility_date": "2024-11-01"}).encode()
+    body = b"".join([
+        f"--{boundary}\r\n".encode(),
+        b'Content-Disposition: form-data; name="metadata"\r\n',
+        b"Content-Type: application/json\r\n\r\n",
+        meta + b"\r\n",
+        f"--{boundary}\r\n".encode(),
+        b'Content-Disposition: form-data; name="worker.js"; filename="worker.js"\r\n',
+        b"Content-Type: application/javascript\r\n\r\n",
+        script.encode() + b"\r\n",
+        f"--{boundary}--\r\n".encode(),
+    ])
+    req = urllib.request.Request(url, data=body, method="PUT", headers={
+        "Authorization": f"Bearer {token}",
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+        "Accept": "application/json",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            raw = response.read().decode()
+            if response.status not in (200, 201):
+                raise ValueError(f"Cloudflare rejected Worker deployment ({response.status})")
+            return json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode(errors="ignore").strip()[:300]
+        raise ValueError(f"Cloudflare Worker upload failed ({exc.code}): {detail or exc.reason}")
+    except urllib.error.URLError as exc:
+        raise ValueError(f"Cloudflare Worker upload unreachable: {exc.reason}")
+
 
 def provision_relay(token, origin, name_prefix="v2leafy-r2"):
-    token=str(token or "").strip()
-    if len(token)<20 or len(token)>300 or any(c.isspace() for c in token): raise ValueError("Cloudflare token is invalid")
-    origin=validate_origin(origin); verify=_json_request(CF_API+"/user/tokens/verify",token)
+    logger.info("[relay] starting Cloudflare worker provisioning")
+    token = str(token or "").strip()
+    if len(token) < 20 or len(token) > 300 or any(c.isspace() for c in token): raise ValueError("Cloudflare token is invalid")
+    origin = validate_origin(origin)
+    logger.info("[relay] verifying token with Cloudflare")
+    verify = _json_request(CF_API + "/user/tokens/verify", token)
     if not verify.get("success"): raise ValueError("Cloudflare token verification failed")
-    accounts=_json_request(CF_API+"/accounts?per_page=1",token).get("result",[])
+    accounts = _json_request(CF_API + "/accounts?per_page=1", token).get("result", [])
     if not accounts: raise ValueError("No Cloudflare account is available for this token")
-    account=accounts[0]["id"]; name=re.sub(r"[^a-z0-9-]","-",name_prefix.lower())[:40].strip("-") or "v2leafy-relay"; script=WORKER_SCRIPT.replace("__TARGET__",json.dumps(origin))
-    req=urllib.request.Request(f"{CF_API}/accounts/{account}/workers/scripts/{name}",data=script.encode(),method="PUT",headers={"Authorization":f"Bearer {token}","Content-Type":"application/javascript"})
-    with urllib.request.urlopen(req,timeout=20) as response:
-        if response.status not in (200,201): raise ValueError("Cloudflare rejected Worker deployment")
-    return {"worker_name":name,"relay_url":f"https://{name}.{account[:8]}.workers.dev","origin":urllib.parse.urlparse(origin).hostname}
+    account = accounts[0]["id"]
+    name = re.sub(r"[^a-z0-9-]", "-", name_prefix.lower())[:40].strip("-") or "v2leafy-relay"
+    script = WORKER_SCRIPT.replace("__TARGET__", json.dumps(origin))
+    logger.info(f"[relay] deploying worker '{name}' on account {account[:8]}...")
+    _upload_worker(f"{CF_API}/accounts/{account}/workers/scripts/{name}", token, script)
+    logger.info(f"[relay] worker deployed: https://{name}.{account[:8]}.workers.dev")
+    return {"worker_name": name, "relay_url": f"https://{name}.{account[:8]}.workers.dev", "origin": urllib.parse.urlparse(origin).hostname}
 
 # ---------------------------------------------------------------------------
 # Direct entry point for Render and compatible Python hosts
