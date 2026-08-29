@@ -392,7 +392,9 @@ def build_client_sub_links(client: dict, endpoint: str | None = None) -> list:
 
             if etype == "proxy":
                 ip = (entry.get("ipAddress") or "").strip() or domain
-                link = f"vless://{cid}@{ip}:443?encryption=none&security=tls&type=ws&host={get_config_host()}&path={quote(f'/ws/{cid}')}&sni={get_config_host()}&fp=chrome&alpn=http/1.1#{quote(resolved_name)}"
+                # Route through the shared generator so the address is sanitised
+                # (ports stripped) exactly like the direct/server links.
+                link = generate_vless_link(cid, remark=resolved_name, address=ip)
                 sub_links.append(link)
             elif etype == "info":
                 info_link = f"trojan://{generate_uuid()}@127.0.0.1:80?security=none#{quote(resolved_name)}"
@@ -1363,14 +1365,6 @@ async def websocket_vless_tunnel(websocket: WebSocket, uuid: str = None):
                     if not has_other and uid_to_clean in link_ip_map:
                         link_ip_map[uid_to_clean].discard(ip_to_clean)
 
-# ---------------------------------------------------------------------------
-# Direct entry point for Render and compatible Python hosts
-# ---------------------------------------------------------------------------
-if __name__ == "__main__":
-    import uvicorn
-    port = get_listen_port()
-    uvicorn.run(app, host="0.0.0.0", port=port, access_log=False)
-
 
 """Cloudflare Worker relay provisioning for R2Leafy.
 
@@ -1429,3 +1423,11 @@ def provision_relay(token, origin, name_prefix="v2leafy-r2"):
     with urllib.request.urlopen(req,timeout=20) as response:
         if response.status not in (200,201): raise ValueError("Cloudflare rejected Worker deployment")
     return {"worker_name":name,"relay_url":f"https://{name}.{account[:8]}.workers.dev","origin":urllib.parse.urlparse(origin).hostname}
+
+# ---------------------------------------------------------------------------
+# Direct entry point for Render and compatible Python hosts
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    import uvicorn
+    port = get_listen_port()
+    uvicorn.run(app, host="0.0.0.0", port=port, access_log=False)
