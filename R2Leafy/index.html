@@ -265,7 +265,7 @@
             <div class="nav-item" onclick="switchTab('clients')"><i class="fa-solid fa-users"></i> Client Profiles</div>
             <div class="nav-item" onclick="switchTab('sublab')"><i class="fa-solid fa-flask"></i> Subscription Lab</div>
             <div class="nav-label">System</div>
-            <div class="nav-item" onclick="switchTab('relay')"><i class="fa-solid fa-shield-halved"></i> Both / Relay</div><div class="nav-item" onclick="switchTab('settings')"><i class="fa-solid fa-gear"></i> Advanced Settings</div>
+            <div class="nav-item" onclick="switchTab('settings')"><i class="fa-solid fa-gear"></i> Advanced Settings</div>
             <div class="nav-item" onclick="switchTab('logs')"><i class="fa-solid fa-terminal"></i> Console Logs</div>
         </div>
         <div class="sidebar-footer">
@@ -419,12 +419,10 @@
                 </div>
             </div>
 
-            <div id="tab-relay" class="tab-view">
-                <div class="card"><h2 class="card-title"><i class="fa-solid fa-shield-halved text-accent"></i> Both — Cloudflare Relay</h2><p style="color:var(--text-muted);font-size:.8rem;line-height:1.5;">Create a Cloudflare Worker relay for the Railway panel. Your token is used once and never stored.</p><a class="btn" href="https://dash.cloudflare.com/profile/api-tokens?permissionGroupKeys=%5B%7B%22key%22%3A%22workers_scripts%22%2C%22type%22%3A%22edit%22%7D%5D&accountId=*&zoneId=all&name=V2Leafy%20Relay" target="_blank">Open Cloudflare Token Page</a><input id="relay-origin" class="form-control" type="url" placeholder="https://your-app.up.railway.app" autocomplete="off"><input id="relay-token" class="form-control mono" type="password" placeholder="Cloudflare API token" autocomplete="new-password"><button class="btn btn-primary" onclick="generateRelay()">Generate Relay</button><p id="relay-result" style="margin-top:12px;color:var(--text-muted);font-size:.8rem;"></p></div>
             </div>
             <div id="tab-settings" class="tab-view">
                 <div class="header-section">
-                    <div><h2>Advanced Core Settings</h2><p>Configure DNS mapping, Multiplexing, and Core parameters.</p></div>
+                    <div><h2>Advanced Core Settings</h2><p>Configure DNS mapping, Multiplexing, Relay, and Core parameters.</p></div>
                     <div style="display:flex; gap:12px; flex-wrap:wrap;">
                         <button class="btn" onclick="window.exportPanelDraft()"><i class="fa-solid fa-file-arrow-down"></i> Export Draft</button>
                         <button class="btn" onclick="document.getElementById('panel-draft-import').click()"><i class="fa-solid fa-file-arrow-up"></i> Import Draft</button>
@@ -435,6 +433,7 @@
                 </div>
 
                 <div class="grid-3">
+                    <div class="panel"><div class="panel-header"><div class="panel-title"><i class="fa-solid fa-shield-halved text-accent"></i> Cloudflare Relay</div></div><div class="panel-body"><p style="color:var(--text-muted);font-size:.8rem;line-height:1.5;">Create a Worker relay. Your token is used once and never stored.</p><a class="btn" href="https://dash.cloudflare.com/profile/api-tokens" target="_blank">Open Cloudflare Token Page</a><input id="relay-origin" class="form-control" type="url" placeholder="https://your-app.up.railway.app" autocomplete="off"><input id="relay-token" class="form-control mono" type="password" placeholder="Cloudflare API token" autocomplete="new-password"><button class="btn btn-primary" onclick="generateRelay()">Generate Relay</button><p id="relay-result" style="margin-top:12px;color:var(--text-muted);font-size:.8rem;"></p></div></div>
                     <div class="panel">
                         <div class="panel-header"><div class="panel-title"><i class="fa-solid fa-route text-accent"></i> Global Routing</div></div>
                         <div class="panel-body">
