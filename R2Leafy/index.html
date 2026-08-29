@@ -813,7 +813,29 @@
             if (!autoScroll || autoScroll.checked) term.scrollTop = term.scrollHeight;
         };
 
-        async function generateRelay(){ const token=document.getElementById('relay-token').value.trim(); const origin=document.getElementById('relay-origin').value.trim(); const out=document.getElementById('relay-result'); if(!token||!origin){out.textContent='Enter both the origin and token.';return;} out.textContent='Provisioning Worker…'; try { const r=await fetch('/api/relay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,origin})}); const data=await r.json(); document.getElementById('relay-token').value=''; if(!r.ok||!data.ok) throw new Error(data.error||data.detail||'Provisioning failed'); out.innerHTML='Relay ready: <a href="'+data.relay.relay_url+'" target="_blank">'+data.relay.relay_url+'</a>'; } catch(e){out.textContent=e.message;} }
+        async function generateRelay(){
+            console.log('[relay] generateRelay() called');
+            const token=document.getElementById('relay-token').value.trim();
+            const origin=document.getElementById('relay-origin').value.trim();
+            const out=document.getElementById('relay-result');
+            if(!token||!origin){out.textContent='Enter both the origin and token.';return;}
+            console.log('[relay] POST /api/relay', { origin: origin, tokenLength: token.length });
+            out.textContent='Provisioning Worker…';
+            try {
+                const r=await fetch('/api/relay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,origin})});
+                console.log('[relay] response status:', r.status);
+                let data;
+                try { data = await r.json(); } catch(e){ data = {}; console.warn('[relay] response was not JSON', e); }
+                console.log('[relay] response body:', data);
+                document.getElementById('relay-token').value='';
+                if(!r.ok||!data.ok) throw new Error(data.error||data.detail||('Provisioning failed (HTTP '+r.status+')'));
+                console.log('[relay] SUCCESS:', data.relay);
+                out.innerHTML='Relay ready: <a href="'+data.relay.relay_url+'" target="_blank">'+data.relay.relay_url+'</a>';
+            } catch(e){
+                console.error('[relay] ERROR:', e);
+                out.textContent=e.message;
+            }
+        }
         let _settingsHydrated = false;
         window.applyPanelState = function(state, dataPayload, forceSettings) {
             if(!state) return;
