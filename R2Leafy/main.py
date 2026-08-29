@@ -882,7 +882,7 @@ async def create_link_api(request: Request, _=Depends(require_auth)):
         "limit_bytes": limit_bytes,
         "used_bytes": 0,
         "max_connections": int(body.get("max_connections") or 0),
-        "expiry": str(body.get("expiry") or ""),
+        "expiry": str(body.get("expiry") or body.get("expiry_date") or ""),
         "status": 1,
         "active": True,
         "utls": "chrome",
