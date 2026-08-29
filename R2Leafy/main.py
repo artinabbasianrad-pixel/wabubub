@@ -1379,7 +1379,10 @@ import urllib.request
 
 CF_API = "https://api.cloudflare.com/client/v4"
 WORKER_SCRIPT = r'''const TARGET = __TARGET__;
-export default { async fetch(request) {
+addEventListener("fetch", (event) => {
+  event.respondWith(handle(event.request));
+});
+async function handle(request) {
   const target = new URL(TARGET); const incoming = new URL(request.url);
   incoming.protocol=target.protocol; incoming.hostname=target.hostname; incoming.port=target.port;
   const isWs=(request.headers.get("Upgrade")||"").toLowerCase()==="websocket";
@@ -1393,7 +1396,7 @@ export default { async fetch(request) {
     return new Response(null,{status:101,webSocket:client}); }
   const headers=new Headers(request.headers); headers.set("Host",target.hostname); headers.delete("Cookie"); const init={method:request.method,headers,redirect:"manual"};
   if(request.method!=="GET"&&request.method!=="HEAD"){init.body=request.body;init.duplex="half";} const response=await fetch(incoming.toString(),init), out=new Headers(response.headers); out.delete("set-cookie"); out.delete("cf-cache-status"); out.set("Cache-Control","no-store"); return new Response(response.body,{status:response.status,statusText:response.statusText,headers:out});
-}};'''
+}'''
 
 def validate_origin(value):
     value=str(value or "").strip(); parsed=urllib.parse.urlparse(value if "://" in value else "https://"+value)
@@ -1423,28 +1426,14 @@ def _json_request(url, token, method="GET", payload=None):
 
 
 def _upload_worker(url, token, script):
-    """Deploy an ES-module Worker via multipart upload (the documented method).
+    """Deploy the Cloudflare relay Worker via a plain PUT.
 
-    A plain `application/javascript` PUT rejects module-format Workers (the ones
-    using `export default`) with HTTP 400, so the metadata part naming the main
-    module is required.
+    The relay script uses the classic service-worker format (addEventListener), so
+    a single `application/javascript` body is the documented, reliable upload."
     """
-    boundary = "----v2leafy" + secrets.token_hex(8)
-    meta = json.dumps({"main_module": "worker.js", "compatibility_date": "2024-11-01"}).encode()
-    body = b"".join([
-        f"--{boundary}\r\n".encode(),
-        b'Content-Disposition: form-data; name="metadata"\r\n',
-        b"Content-Type: application/json\r\n\r\n",
-        meta + b"\r\n",
-        f"--{boundary}\r\n".encode(),
-        b'Content-Disposition: form-data; name="worker.js"; filename="worker.js"\r\n',
-        b"Content-Type: application/javascript\r\n\r\n",
-        script.encode() + b"\r\n",
-        f"--{boundary}--\r\n".encode(),
-    ])
-    req = urllib.request.Request(url, data=body, method="PUT", headers={
+    req = urllib.request.Request(url, data=script.encode(), method="PUT", headers={
         "Authorization": f"Bearer {token}",
-        "Content-Type": f"multipart/form-data; boundary={boundary}",
+        "Content-Type": "application/javascript",
         "Accept": "application/json",
     })
     try:
