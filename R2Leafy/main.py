@@ -34,20 +34,14 @@ def get_listen_port() -> int:
     except (ValueError, TypeError):
         return 8000
 
-_secret_key = os.environ.get("SECRET_KEY")
+_secret_key = os.environ.get("SECRET_KEY", "").strip()
 if not _secret_key:
-    if (
-        os.environ.get("RENDER_EXTERNAL_URL")
-        or os.environ.get("RENDER_SERVICE_ID")
-        or os.environ.get("RAILWAY_PUBLIC_DOMAIN")
-        or os.environ.get("RAILWAY_ENVIRONMENT_ID")
-        or os.environ.get("RAILWAY_SERVICE_ID")
-        or os.environ.get("RAILWAY_PROJECT_ID")
-    ):
-        raise RuntimeError("SECRET_KEY must be configured for hosted R2Leafy deployments")
+    # Railway may start the service before generated variables are attached.
+    # Use a process-local strong key so health checks can come up; set SECRET_KEY
+    # in Railway for stable sessions across restarts.
     _secret_key = secrets.token_urlsafe(48)
     logging.getLogger("R2Leafy").warning(
-        "SECRET_KEY is not set; using a local-development key. Configure SECRET_KEY before deployment."
+        "SECRET_KEY is not set; using a temporary process key. Configure SECRET_KEY in Railway for persistent sessions."
     )
 
 CONFIG = {
