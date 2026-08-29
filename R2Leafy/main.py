@@ -297,8 +297,27 @@ def get_domain() -> str:
         return CUSTOM_DOMAIN
     render_url = os.environ.get("RENDER_EXTERNAL_URL", "")
     railway_domain = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "")
-    domain = render_url or railway_domain or f"localhost:{get_listen_port()}"
+    domain = render_url or railway_domain or "localhost"
     return domain.replace("https://", "").replace("http://", "").rstrip("/")
+
+def get_config_host() -> str:
+    """Host used inside generated VLESS configs (never includes a port).
+
+    The proxy always listens on 443, so embedding a port here would produce
+    malformed addresses like `host:8014:443` and break every generated config.
+    """
+    domain = get_domain()
+    if not domain:
+        return "localhost"
+    # Strip an explicit port if one sneaks in (e.g. CUSTOM_DOMAIN set to `host:443`).
+    host = domain
+    if host.startswith("["):  # IPv6 literal
+        end = host.find("]")
+        if end != -1:
+            return host[: end + 1]
+    elif ":" in host:
+        host = host.rsplit(":", 1)[0]
+    return host.rstrip(".") or "localhost"
 
 def uptime_seconds() -> int:
     return int(time.time() - stats["start_time"])
@@ -312,17 +331,28 @@ def generate_uuid() -> str:
     return secrets.token_hex(4) + "-" + secrets.token_hex(2) + "-" + secrets.token_hex(2) + "-" + secrets.token_hex(2) + "-" + secrets.token_hex(6)
 
 def generate_vless_link(uuid: str, remark: str = "R2Leafy", address: str = None) -> str:
-    domain = get_domain()
-    addr = address if address else domain
+    host = get_config_host()
+    addr = (address or host).strip()
+    if not addr:
+        addr = host
+    # The proxy always listens on 443; never let a port leak in from a custom
+    # address or host (would produce `host:8443:443` and break the config).
+    if addr.startswith("["):
+        end = addr.find("]")
+        if end != -1:
+            addr = addr[: end + 1]
+    elif ":" in addr:
+        addr = addr.rsplit(":", 1)[0]
+    addr = addr.rstrip(".") or host
     path = f"/ws/{uuid}"
     # High ALPN negotiation: h2, http/1.1 for maximum performance
     params = {
         "encryption": "none",
         "security": "tls",
         "type": "ws",
-        "host": domain,
+        "host": host,
         "path": path,
-        "sni": domain,
+        "sni": host,
         "fp": "chrome",
         "alpn": "http/1.1",
     }
@@ -362,7 +392,7 @@ def build_client_sub_links(client: dict, endpoint: str | None = None) -> list:
 
             if etype == "proxy":
                 ip = (entry.get("ipAddress") or "").strip() or domain
-                link = f"vless://{cid}@{ip}:443?encryption=none&security=tls&type=ws&host={domain}&path={quote(f'/ws/{cid}')}&sni={domain}&fp=chrome&alpn=http/1.1#{quote(resolved_name)}"
+                link = f"vless://{cid}@{ip}:443?encryption=none&security=tls&type=ws&host={get_config_host()}&path={quote(f'/ws/{cid}')}&sni={get_config_host()}&fp=chrome&alpn=http/1.1#{quote(resolved_name)}"
                 sub_links.append(link)
             elif etype == "info":
                 info_link = f"trojan://{generate_uuid()}@127.0.0.1:80?security=none#{quote(resolved_name)}"
