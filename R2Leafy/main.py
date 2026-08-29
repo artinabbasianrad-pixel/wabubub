@@ -51,7 +51,7 @@ CONFIG = {
 
 SESSION_COOKIE = "r2leafy_session"
 SESSION_TTL = 60 * 60 * 24 * 7  # 7 days
-STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "panel_state.json")
+STATE_FILE = os.environ.get("R2LEAFY_STATE_FILE") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "panel_state.json")
 INDEX_HTML_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html")
 
 def hash_password(pw: str) -> str:
@@ -969,9 +969,6 @@ async def public_subscription_endpoint(encoded_id: str, request: Request):
             client = c
             break
 
-    if not client and len(CLIENTS) == 1:
-        client = CLIENTS[0]
-
     if not client:
         raise HTTPException(status_code=404, detail="Subscription client not found")
     if not client.get("status", 1):
@@ -1301,10 +1298,14 @@ async def websocket_vless_tunnel(websocket: WebSocket, uuid: str = None):
             raw_u = first_chunk[1:17].hex()
             target_uuid = f"{raw_u[:8]}-{raw_u[8:12]}-{raw_u[12:16]}-{raw_u[16:20]}-{raw_u[20:]}"
 
-        client = next((c for c in CLIENTS if c["id"] == target_uuid or not uuid), None)
-        if not client and CLIENTS:
-            client = CLIENTS[0]
+        # Strict identity check: an unknown or absent client id must never be
+        # mapped to another client. This closes the open-relay hole where a bare
+        # /ws or an arbitrary UUID got free transit billed to client #0.
+        if not target_uuid:
+            await websocket.close(code=1008, reason="Missing client identifier")
+            return
 
+        client = next((c for c in CLIENTS if c["id"] == target_uuid), None)
         if not client or not client.get("status", 1):
             await websocket.close(code=1008, reason="Invalid or disabled client")
             return
