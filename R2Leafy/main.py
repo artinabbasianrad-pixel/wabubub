@@ -45,7 +45,7 @@ if not _secret_key:
         or os.environ.get("RAILWAY_PROJECT_ID")
     ):
         raise RuntimeError("SECRET_KEY must be configured for hosted R2Leafy deployments")
-    _secret_key = "r2leafy-local-development-secret"
+    _secret_key = secrets.token_urlsafe(48)
     logging.getLogger("R2Leafy").warning(
         "SECRET_KEY is not set; using a local-development key. Configure SECRET_KEY before deployment."
     )
