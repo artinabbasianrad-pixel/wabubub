@@ -829,7 +829,9 @@ async def public_subscription_endpoint(encoded_id: str, request: Request):
     # If accessed from browser (HTML), render subscription landing page
     accept_header = request.headers.get("accept", "").lower()
     user_agent = request.headers.get("user-agent", "").lower()
-    is_browser = ("text/html" in accept_header or "mozilla" in user_agent) and "raw" not in request.query_params
+    # Subscription endpoints must always return client-readable base64 text.
+    # The embedded panel is served only by the dashboard routes.
+    is_browser = False
 
     if is_browser:
         data_obj = {
