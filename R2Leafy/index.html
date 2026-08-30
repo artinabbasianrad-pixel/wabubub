@@ -291,10 +291,6 @@
                 <div class="mini-stat-item" style="color:var(--info)"><i class="fa-solid fa-arrow-up-long"></i> <span id="m-tx-mini">0.00</span> GB</div>
                 <div class="mini-stat-item" style="color:var(--purple)"><i class="fa-solid fa-gauge-high"></i> <span id="m-speed-mini">0 / 0</span> Mbps</div>
             </div>
-            <div id="topbar-xray-status" style="display:flex; align-items:center; gap:8px; font-size:0.78rem; font-weight:700; font-family:'JetBrains Mono',monospace;">
-                <span id="topbar-xray-dot" style="width:8px; height:8px; border-radius:50%; background:var(--accent); box-shadow:0 0 6px var(--accent); display:inline-block; flex-shrink:0; transition:background 0.3s, box-shadow 0.3s;"></span>
-                <span id="topbar-xray-label" style="color:var(--accent); transition:color 0.3s;">Xray ON</span>
-            </div>
         </header>
 
         <button class="mobile-toggle" style="position:absolute; top:16px; left:20px; z-index:40;" id="mobile-dash-btn" onclick="document.getElementById('sidebar').classList.toggle('open')"><i class="fa-solid fa-bars"></i></button>
@@ -307,7 +303,6 @@
                     <div class="metric-card"><div class="metric-title">Download <i class="fa-solid fa-arrow-down-long" style="color:var(--accent)"></i></div><div class="metric-val mono" id="m-rx">0.00 <span class="metric-sub">GB</span></div></div>
                     <div class="metric-card"><div class="metric-title">Upload <i class="fa-solid fa-arrow-up-long" style="color:var(--info)"></i></div><div class="metric-val mono" id="m-tx">0.00 <span class="metric-sub">GB</span></div></div>
                     <div class="metric-card"><div class="metric-title">Speed (DL/UL) <i class="fa-solid fa-gauge-high" style="color:var(--purple)"></i></div><div class="metric-val mono" id="m-speed">0 <span class="metric-sub">/ 0 Mbps</span></div></div>
-                    <div class="metric-card"><div class="metric-title">Core Uptime <i class="fa-solid fa-clock" style="color:var(--warning)"></i></div><div class="metric-val mono" id="m-uptime">0h 00m</div></div>
                 </div>
 
                 <div class="grid-2" style="flex: 1; min-height: 320px; flex-shrink: 0;">
@@ -315,20 +310,8 @@
                         <div class="panel" style="flex: 1;">
                             <div class="panel-header"><div class="panel-title"><i class="fa-solid fa-heart-pulse text-accent"></i> Health Overview</div></div>
                             <div class="panel-body" style="gap: 16px; justify-content: center;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:12px;"><span style="color:var(--text-muted); font-weight:600; font-size:0.85rem;">Engine Status</span><span class="tag tag-red" id="dash-status-tag">Offline</span></div>
                                 <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:12px;"><span style="color:var(--text-muted); font-weight:600; font-size:0.85rem;">System Load Avg</span><span class="mono" id="dash-load-avg">0.00</span></div>
                                 <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--text-muted); font-weight:600; font-size:0.85rem;">Memory Allocation</span><span class="mono" id="dash-mem-alloc">0 / 0 MB</span></div>
-                            </div>
-                        </div>
-                        <div class="panel">
-                            <div class="panel-header"><div class="panel-title"><i class="fa-solid fa-power-off text-info"></i> Power Control</div></div>
-                            <div class="panel-body" style="gap: 16px; justify-content: center;">
-                                <p style="color:var(--text-muted); font-size:0.8rem; line-height:1.5;">Restarting or stopping the core will immediately sever all active client connections.</p>
-                                <div style="display:flex; gap:12px;">
-                                    <button class="btn" style="flex:1; background:var(--accent-bg); color:var(--accent); border:none;" onclick="window.setXrayStatus('start')"><i class="fa-solid fa-play"></i> Start</button>
-                                    <button class="btn" style="flex:1; background:var(--danger-bg); color:var(--danger); border:none;" onclick="window.setXrayStatus('stop')"><i class="fa-solid fa-stop"></i> Stop</button>
-                                    <button class="btn btn-primary" style="flex:1;" onclick="window.setXrayStatus('restart')"><i class="fa-solid fa-rotate-right"></i> Restart</button>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -514,10 +497,6 @@
                     </div>
                 </div>
 
-                <div class="panel" style="flex-shrink: 0;">
-                    <div class="panel-header"><div class="panel-title"><i class="fa-solid fa-file-code text-info"></i> Xray Config Preview</div><button class="btn" style="padding:6px 14px; font-size:0.75rem;" onclick="window.refreshConfigPreview()"><i class="fa-solid fa-rotate"></i> Refresh</button></div>
-                    <div class="panel-body" style="gap:12px;"><textarea class="form-control mono" id="config-preview-json" style="min-height:300px; resize:vertical; background: #050505; color: #a1a1aa; border-color: var(--border);" readonly></textarea></div>
-                </div>
             </div>
 
             <div id="tab-logs" class="tab-view">
@@ -526,7 +505,7 @@
                     <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
                         <input type="text" id="log-search" class="form-control" placeholder="Search logs..." style="width:180px; padding:8px 14px; font-size:0.8rem;" oninput="window.filterLogs()">
                         <label class="switch" title="Auto-scroll"><input type="checkbox" id="log-autoscroll" checked><span class="slider"></span></label><span style="font-size:0.75rem; color:var(--text-muted); font-weight: 600;">Auto</span>
-                        <button class="btn btn-danger" id="btn-clear-logs" onclick="window.setXrayStatus('clear_logs')"><i class="fa-solid fa-trash"></i> Clear</button>
+                        <button class="btn btn-danger" id="btn-clear-logs" onclick="window.sendAction('clear_logs')"><i class="fa-solid fa-trash"></i> Clear</button>
                     </div>
                 </div>
                 <div class="panel panel-full" style="border:none;"><div class="terminal" id="log-output"></div></div>
@@ -703,9 +682,6 @@
             }
             if(window.innerWidth <= 1024) document.getElementById('sidebar').classList.remove('open');
 
-            if(tabId === 'settings' && typeof window.refreshConfigPreview === 'function') {
-                window.refreshConfigPreview();
-            }
             if(tabId === 'logs' && typeof window.filterLogs === 'function') {
                 window.filterLogs();
             }
@@ -878,7 +854,6 @@
                 const logL = document.getElementById('adv-log-level'); if(logL) logL.value = adv.logLevel || 'warning';
                 const accL = document.getElementById('adv-access-log'); if(accL) accL.checked = adv.accessLog || false;
                 _settingsHydrated = true;
-                if(typeof refreshConfigPreview === 'function') refreshConfigPreview();
             }
 
             renderClients();
@@ -893,28 +868,12 @@
             const _ccEl = document.getElementById('adv-tcpcc'); if(_ccEl){ _ccEl.innerText = _cc.toUpperCase(); _ccEl.className = 'tag tag-purple'; }
             const _connEl = document.getElementById('adv-conns'); if(_connEl) _connEl.innerText = String(t.connections||0);
 
-            const xrayUp = t.xrayRunning !== false;
-            const statusTag = document.getElementById('dash-status-tag');
-            if(statusTag) { statusTag.className = xrayUp ? 'tag tag-purple' : 'tag tag-red'; statusTag.innerText = xrayUp ? 'Online' : 'Offline'; }
-
-            const dot = document.getElementById('topbar-xray-dot');
-            if(dot) { dot.style.background = xrayUp ? 'var(--accent)' : 'var(--danger)'; dot.style.boxShadow = xrayUp ? '0 0 8px var(--accent)' : 'none'; }
-
-            const lbl = document.getElementById('topbar-xray-label');
-            if(lbl) { lbl.style.color = xrayUp ? 'var(--accent)' : 'var(--danger)'; lbl.innerText = xrayUp ? 'Xray ON' : 'Xray OFF'; }
-
             const mRx = document.getElementById('m-rx'); if(mRx) mRx.innerHTML = `${Number(t.totalRxGb||0).toFixed(2)} <span class="metric-sub">GB</span>`;
             const mTx = document.getElementById('m-tx'); if(mTx) mTx.innerHTML = `${Number(t.totalTxGb||0).toFixed(2)} <span class="metric-sub">GB</span>`;
             const mRxMini = document.getElementById('m-rx-mini'); if(mRxMini) mRxMini.innerText = Number(t.totalRxGb||0).toFixed(2);
             const mTxMini = document.getElementById('m-tx-mini'); if(mTxMini) mTxMini.innerText = Number(t.totalTxGb||0).toFixed(2);
             const mSpeed = document.getElementById('m-speed'); if(mSpeed) mSpeed.innerHTML = `${Number(t.speedDownMbps||0).toFixed(1)} <span class="metric-sub">/ ${Number(t.speedUpMbps||0).toFixed(1)} Mbps</span>`;
             const mSpeedMini = document.getElementById('m-speed-mini'); if(mSpeedMini) mSpeedMini.innerText = `${Number(t.speedDownMbps||0).toFixed(1)} / ${Number(t.speedUpMbps||0).toFixed(1)}`;
-
-            const mUptime = document.getElementById('m-uptime');
-            if(mUptime) {
-                let s = t.xrayUptimeSec || 0;
-                mUptime.innerText = xrayUp ? `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60).toString().padStart(2,'0')}m` : 'Stopped';
-            }
 
             const loadAvgEl = document.getElementById('dash-load-avg');
             if(loadAvgEl) loadAvgEl.innerText = (Array.isArray(t.loadAvg)?t.loadAvg:[0.12,0.08,0.05]).map(x=>Number(x||0).toFixed(2)).join(' / ');
@@ -1310,21 +1269,6 @@
             } catch(e) { showToast('Backup failed: network error', 'error'); }
         };
 
-        window.refreshConfigPreview = async function() {
-            const preview = document.getElementById('config-preview-json');
-            if(!preview) return;
-            try {
-                const res = await fetch('/api/config');
-                if(res.status === 401) { showAuthRequired(); return; }
-                if(!res.ok) throw new Error('HTTP ' + res.status);
-                const data = await res.json();
-                preview.value = (data.ok && data.config) ? JSON.stringify(data.config, null, 2)
-                                                          : '// Config generated successfully.';
-            } catch(e) {
-                preview.value = '// Live Xray Config: Active on port 443';
-            }
-        }
-
 
         window.onload = () => {
             setTimeout(() => {
@@ -1336,7 +1280,6 @@
                 ensureCharts();
                 if(typeof window.filterLogs === 'function') window.filterLogs();
                 if(loggedIn && passSetup) {
-                    if(typeof window.refreshConfigPreview === 'function') window.refreshConfigPreview();
                     if(window.initBackendSync) window.initBackendSync();
                 }
             }, 200);
@@ -1380,13 +1323,11 @@ window.initBackendSync = async function() {
     syncLoop();
 };
 
-window.setXrayStatus = async function(action) {
-    if(action !== 'clear_logs') showToast('Executing ' + action + '...', 'info');
+window.sendAction = async function(action) {
     try {
         let res = await fetch('/api/action', { method: 'POST', body: JSON.stringify({action}), headers: {'Content-Type': 'application/json'} });
         if(res.status === 401) return showAuthRequired();
-        if(res.ok && action !== 'clear_logs') showToast('Command completed: ' + action, 'success');
-        else if(!res.ok) showToast('Command failed', 'error');
+        if(!res.ok) showToast('Command failed', 'error');
     } catch(e) { showToast('Network error', 'error'); }
 };
 
